@@ -24,7 +24,7 @@ if (!isset($metaDescription)) {
         <nav>
             <ul>
                 <li><a href="frontcontroller.php?page=accueil">Accueil</a></li>
-                <li><a href="frontcontroller.php?page=about">À propos</a></li>
+                <li><a href="frontcontroller.php?page=a-propos">À propos</a></li>
             </ul>
         </nav>
     </header>

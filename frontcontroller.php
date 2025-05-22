@@ -1,23 +1,12 @@
 <?php
 
-// Toutes les requêtes passent par ce fichier qui charge la page demandée via le paramètre GET "page"
+// Toutes les requêtes passent par ce fichier qui charge la page demandée via le paramètre GET "page".
 
 // Inclusion des fichiers de configuration si nécessaire
 // require_once 'config/config.php
 
 // Récupération du paramètre "page" depuis l'URL
-$page = isset($_GET['page']) ? $_GET['page'] : 'accueil';
-
-// Définition des pages autorisées
-$pages_autorisees = [
-    'accueil',
-    'about'
-];
-
-// Vérification que la page demandée est autorisée
-if (!in_array($page, $pages_autorisees)) {
-    $page = 'erreur404';
-}
+$page = isset($_GET['page']) ? $_GET['page'] : 'accueil'; // à la place de la page accueil, on pourrait choisir 404.
 
 // En-tête commun du site
 include 'header.php';
@@ -29,7 +18,7 @@ switch ($page) {
         break;
 
     case 'about':
-        include 'about.php';
+        include 'a-propos.php';
         break;
 
     case 'erreur404':
@@ -39,5 +28,3 @@ switch ($page) {
 
 // Pied de page commun
 include 'footer.php';
-
-?>
