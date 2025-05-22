@@ -88,6 +88,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $donnees_formulaire .= "Nom: " . $nom . "\n";
         $donnees_formulaire .= "Prenom: " . $prenom . "\n";
         $donnees_formulaire .= "Email: " . $email . "\n";
+        $donnees_formulaire .= "Raison du contact:" . $raison . "\n";
         $donnees_formulaire .= "Message: " . $message . "\n";
         $donnees_formulaire .= "---------------------------------------\n";
 

@@ -1,10 +1,5 @@
 <?php
 
-// Toutes les requêtes passent par ce fichier qui charge la page demandée via le paramètre GET "page".
-
-// Inclusion des fichiers de configuration si nécessaire
-// require_once 'config/config.php
-
 // Récupération du paramètre "page" depuis l'URL
 $page = isset($_GET['page']) ? $_GET['page'] : 'accueil'; // à la place de la page accueil, on pourrait choisir 404.
 
@@ -17,13 +12,25 @@ switch ($page) {
         include 'accueil.php';
         break;
 
-    case 'about':
+    case 'a-propos':
         include 'a-propos.php';
         break;
 
-    case 'erreur404':
-        include 'erreur404.php';
+    case 'contact':
+        include 'contact.php';
         break;
+
+    case 'contact-filter':
+        include 'contact-filter.php';
+        break;
+
+    case 'contact-confirmation':
+        include 'contact-confirmation.php';
+        break;
+
+    default:
+        http_response_code(404);
+        echo "<h1>404 - Page introuvable</h1>";
 }
 
 // Pied de page commun
