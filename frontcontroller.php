@@ -21,7 +21,7 @@ switch ($page) {
         break;
 
     case 'contact-filter':
-        include 'contact-filter.php';
+        include 'contact.php';
         break;
 
     case 'contact-confirmation':
