@@ -4,28 +4,24 @@
 $page = isset($_GET['page']) ? $_GET['page'] : 'accueil'; // à la place de la page accueil, on pourrait choisir 404.
 
 // En-tête commun du site
-include 'header.php';
+include 'include/header.php';
 
 // Chargement de la page demandée
 switch ($page) {
     case 'accueil':
-        include 'accueil.php';
+        include 'pages/accueil.php';
         break;
 
     case 'a-propos':
-        include 'a-propos.php';
+        include 'pages/a-propos.php';
         break;
 
     case 'contact':
-        include 'contact.php';
-        break;
-
-    case 'contact-filter':
-        include 'contact.php';
+        include 'pages/contact.php';
         break;
 
     case 'contact-confirmation':
-        include 'contact-confirmation.php';
+        include 'pages/contact-confirmation.php';
         break;
 
     default:
@@ -34,4 +30,4 @@ switch ($page) {
 }
 
 // Pied de page commun
-include 'footer.php';
+include 'include/footer.php';

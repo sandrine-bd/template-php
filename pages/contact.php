@@ -9,7 +9,7 @@ $prenom = '';
 $email = '';
 $raison = '';
 $message = '';
-$donnees_formulaire = '';
+$fichier_info = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') { // Vérification que le formulaire a bien été soumis via POST
 
@@ -68,6 +68,65 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') { // Vérification que le formulaire 
         }
     }
 
+    // Validation et traitement du fichier uploadé
+    $nom_fichier_final = '';
+    if (isset($_FILES['fichier_joint']) && $_FILES['fichier_joint']['error'] !== UPLOAD_ERR_NO_FILE) {
+        $fichier = $_FILES['fichier_joint'];
+
+        //Vérification des erreurs d'upload
+        if ($fichier['error'] !== UPLOAD_ERR_OK) {
+            switch ($fichier['error']) {
+                case UPLOAD_ERR_INI_SIZE:
+                case UPLOAD_ERR_FORM_SIZE:
+                    $erreurs['fichier'] = "Le fichier est trop volumineux.";
+                    break;
+                case UPLOAD_ERR_PARTIAL:
+                    $erreurs['fichier'] = "Le fichier n'a été que partiellement téléchargé.";
+                    break;
+                default:
+                    $erreurs['fichier'] = "Erreur lors du téléchargement du fichier.";
+            }
+        } else {
+            // Vérification de la taille (5 MB)
+            $taille_max = 5 * 1024 * 1024;
+            if ($fichier['size'] > $taille_max) {
+                $erreurs['fichier'] = "Le fichier ne peut pas dépasser 5 MB.";
+            }
+
+            // Vérification du type de fichier
+            $extensions_autorisees = ['jpg', 'jpeg', 'gif', 'png', 'pdf', 'doc', 'docx', 'txt', 'zip'];
+            $extension = strtolower(pathinfo($fichier['name'], PATHINFO_EXTENSION));
+
+            if (!in_array($extension, $extensions_autorisees)) {
+                $erreurs['fichier'] = "Type de fichier non autorisé. Extensions acceptées : " . implode(', ', $extensions_autorisees)   ;
+            }
+
+            // Si pas d'erreur, on prépare le fichier pour sauvegarde
+            if (!isset($erreurs['fichier'])) {
+                // Création d'un nom unique pour éviter les conflits
+                $nom_fichier_original = pathinfo($fichier['name'], PATHINFO_FILENAME);
+                $nom_fichier_unique = $nom_fichier_original . ' ' . uniqid() . '.' . $extension;
+
+                // Création du dossier storage s'il n'existe pas
+                $dossier_storage = "storage";
+                if (!is_dir($dossier_storage)) {
+                    mkdir($dossier_storage, 0777, true);
+                }
+
+                $chemin_destination = $dossier_storage . '/' . $nom_fichier_unique;
+
+                // Déplacement du fichier vers le dossier storage
+                if (move_uploaded_file($fichier['tmp_name'], $chemin_destination)) {
+                    $nom_fichier_final = $nom_fichier_unique;
+                    $fichier_info = "Fichier original : " . $fichier['name'] . " | Taille : " . round($fichier['size'] / 1024, 2) . "KB";
+                } else {
+                    $erreurs['fichier'] = "Erreur lors de la sauvegarde du fichier.";
+                }
+            }
+        }
+    }
+
+
     // Traitement du formulaire si aucune erreur
     if (empty($erreurs)) {
         // Création d'une chaîne formatée avec les données du formulaire
@@ -79,42 +138,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') { // Vérification que le formulaire 
         $donnees_formulaire .= "Email : " . $email . "\n";
         $donnees_formulaire .= "Raison du contact : " . $raison . "\n";
         $donnees_formulaire .= "Message : " . $message . "\n";
+        $donnees_formulaire .= "Fichier joint : " . $nom_fichier_final . "\n";
+        $donnees_formulaire .= $fichier_info . "\n";
         $donnees_formulaire .= "------------------------------------\n";
-    }
 
-    $fichier = "contacts/formulaires_contact.txt"; // chemin du fichier
-    $repertoire = dirname($fichier);
-    if (!is_dir($repertoire)) {  // création du dossier s'il n'existe pas
-        mkdir($repertoire, 0755, true); // création récursive avec permissions
-    }
+        $fichier = "contacts/formulaires_contact.txt"; // chemin du fichier
+        $repertoire = dirname($fichier);
+        if (!is_dir($repertoire)) {  // création du dossier s'il n'existe pas
+            mkdir($repertoire, 0755, true); // création récursive avec permissions
+        }
 
-    // Enregistrement des données grâce aux drapeaux file_append (ajout sans écraser) et lock (empêche d'écrire dans le fichier)
-    $resultat = file_put_contents($fichier, $donnees_formulaire, FILE_APPEND | LOCK_EX);
+        // Enregistrement des données grâce aux drapeaux file_append (ajout sans écraser) et lock (empêche d'écrire dans le fichier)
+        $resultat = file_put_contents($fichier, $donnees_formulaire, FILE_APPEND | LOCK_EX);
 
-    // Vérification que l'enregistrement a fonctionné
-    if ($resultat === false) {
-        $_SESSION['warning_message'] = "Votre message n'a pas été enregistré. Nous revenons vers vous très vite.";
+        // Vérification que l'enregistrement a fonctionné
+        if ($resultat === false) {
+            $_SESSION['warning_message'] = "Votre message n'a pas été enregistré. Nous revenons vers vous très vite.";
+        } else {
+            $_SESSION['success_message'] = "Votre message a bien été enregistré.";
+        }
+
+        // Redirection vers la page de confirmation
+        header('Location: frontcontroller.php?page=contact-confirmation');
+        exit; // ajout obligatoire après header
     } else {
-        $_SESSION['success_message'] = "Votre message a bien été enregistré.";
+        // en cas d'erreur, on les stocke en session pour les afficher sur le formulaire
+        $_SESSION['form_errors'] = $erreurs;
+        // on conserve aussi les données valides saisies pour éviter à l'utilisateur de tout remplir à nouveau
+        $_SESSION['form_data'] = [
+            'civilite' => $civilite,
+            'nom' => $nom,
+            'prenom' => $prenom,
+            'email' => $email,
+            'raison_contact' => $raison,
+            'message' => $message,
+            'fichier_info' => $fichier_info,
+        ];
     }
-
-    // Redirection vers la page de confirmation
-    header('Location: frontcontroller.php?page=contact-confirmation');
-} else {
-    // en cas d'erreur, on les stocke en session pour les afficher sur le formulaire
-    $_SESSION['form_errors'] = $erreurs;
-    // on conserve aussi les données valides saisies pour éviter à l'utilisateur de tout remplir à nouveau
-    $_SESSION['form_data'] = [
-        'civilite' => $civilite,
-        'nom' => $nom,
-        'prenom' => $prenom,
-        'email' => $email,
-        'raison_contact' => $raison,
-        'message' => $message,
-    ];
-    // Redirection vers le formulaire avec les erreurs
-    header('Location: frontcontroller.php?page=contact');
-    exit;
 }
 ?>
 
@@ -122,8 +182,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') { // Vérification que le formulaire 
 <?php if (!empty($_SESSION['form_errors'])) : ?>
     <div>
         <ul>
-            <?php foreach ($_SESSION['form_errors'] as $erreurs) : ?>
-                <li><?php echo $erreurs; ?></li>
+            <?php foreach ($_SESSION['form_errors'] as $erreur) : ?>
+                <li><?php echo htmlspecialchars($erreur); ?></li>
             <?php endforeach; ?>
         </ul>
     </div>
@@ -149,7 +209,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') { // Vérification que le formulaire 
 <main>
     <h1>Formulaire de contact</h1>
 
-    <form action="../frontcontroller.php?page=contact" method="POST">
+    <form action="frontcontroller.php?page=contact" method="POST" enctype="multipart/form-data">
 
         <div>
             <?php if (isset($erreurs['civilite'])): ?>
@@ -210,6 +270,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') { // Vérification que le formulaire 
             <?php endif; ?>
             <label for="message">Message :</label>
             <textarea id="message" name="user_message" placeholder="Votre message (minimum 5 caractères)"></textarea>
+        </div>
+
+        <div>
+            <?php if(isset($erreurs['fichier'])): ?>
+                <div><?php echo htmlspecialchars($erreurs['fichier']); ?></div>
+            <?php endif; ?>
+            <label for="fichier">Fichier :</label>
+            <input id="fichier" type="file" name="fichier_joint">
         </div>
 
         <div>
