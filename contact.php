@@ -8,6 +8,14 @@ $erreurs = [];
 // Vérification que le formulaire a bien été soumis via POST
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
+    // Initialisation des variables pour éviter les erreurs de portée
+    $nom = '';
+    $prenom = '';
+    $email = '';
+    $raison = '';
+    $message = '';
+    $civilite = '';
+
     // Validation de la civilité
     if (empty($_POST['civilite'])) {
         $erreurs['civilite'] = 'Veuillez sélectionner une civilité';
@@ -73,19 +81,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Traitement du formulaire si aucune erreur
     if (empty($erreurs)) {
-        // redirection avec message de succès
-        $_SESSION['success_message'] = "Votre message a bien été envoyé";
+        // Création d'un fichier texte (chaîne formatée) avec les données du formulaire
+        $donnees_formulaire = "---Nouvelle soumission de formulaire ---\n";
+        $donnees_formulaire .= "Date: " . date("Y-m-d H:i:s") . "\n";
+        $donnees_formulaire .= "Civilité: " . $civilite . "\n";
+        $donnees_formulaire .= "Nom: " . $nom . "\n";
+        $donnees_formulaire .= "Prenom: " . $prenom . "\n";
+        $donnees_formulaire .= "Email: " . $email . "\n";
+        $donnees_formulaire .= "Message: " . $message . "\n";
+        $donnees_formulaire .= "---------------------------------------\n";
+
+        // Définition du chemin du fichier
+        $fichier = "contacts/formulaires_contact.txt";
+
+        // Création du dossier s'il n'existe pas
+        $repertoire = dirname($fichier);
+        if (!is_dir($repertoire)) {
+            mkdir($repertoire, 0755, true); // création récursive avec permissions
+        }
+
+        // Enregistrement des données dans le fichier grâce aux drapeaux file_append (ajout sans écraser le fichier) et lock (empêche quiconque d'écrire dans le fichier)
+        $resultat = file_put_contents($fichier, $donnees_formulaire, FILE_APPEND | LOCK_EX);
+
+        // Vérification que l'enregistrement a fonctionné
+        if (!$resultat === false) {
+            $_SESSION['warning_message'] = "Votre message a été reçu mais n'a pas pu être enregistré. Nous vous contacterons dès que possible.";
+        } else {
+            $_SESSION['success_message'] = "Votre message a bien été envoyé. Nous vous répondrons dans les plus bref délais.";
+        }
+
+        // Redirection avec message de succès
         header('Location: frontcontroller.php?page=contact_confirmation');
     } else {
-        $_SESSSION['form_errors'] = $erreurs; // en cas d'erreur, on les stocke en session pour les afficher sur le formulaire
-        // on conserve les données valides saisies pour éviter à l'utilisateur de tout remplir à nouveau
-        $_SESSSION['form_data'] = [
-            'civilite' => isset($civilite) ? $civilite : '',
-            'nom' => isset($nom) ? $nom : '',
-            'prenom' => isset($prenom) ? $prenom : '',
-            'email' => isset($email) ? $email : '',
-            'raison_contact' => isset($raison) ? $raison : '',
-            'message' => isset($message) ? $message : '',
+        // en cas d'erreur, on les stocke en session pour les afficher sur le formulaire
+        $_SESSION['form_errors'] = $erreurs;
+        // on conserve aussi les données valides saisies pour éviter à l'utilisateur de tout remplir à nouveau
+        $_SESSION['form_data'] = [
+            'civilite' => $civilite,
+            'nom' => $nom,
+            'prenom' => $prenom,
+            'email' => $email,
+            'raison_contact' => $raison,
+            'message' => $message,
         ];
         // Redirection vers le formulaire avec les erreurs
         header('Location: frontcontroller.php?page=contact');
@@ -104,10 +141,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <?php endforeach; ?>
         </ul>
     </div>
-
     <?php
-    // On nettoie les erreurs après affichage
-    unset($_SESSION['form_errors']);
+    unset($_SESSION['form_errors']); // nettoie les erreurs après affichage
     ?>
 <?php endif; ?>
 
@@ -117,8 +152,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php echo $_SESSION['success_message']; ?>
     </div>
     <?php
-    // On nettoie le message après affichage
-    unset($_SESSION['success_message']);
+    unset($_SESSION['success_message']); // nettoie le message après affichage
+    ?>
+<?php endif; ?>
+
+    <!-- Affichage du message d'avertissement -->
+<?php if (isset($_SESSION['warning_message'])): ?>
+    <div>
+        <?php echo $_SESSION['warning_message']; ?>
+    </div>
+    <?php
+    unset($_SESSION['warning_message']); // nettoie le message après affichage
     ?>
 <?php endif; ?>
 
@@ -170,8 +214,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </form>
 </main>
 
+    <!-- On nettoie les données du formulaire après affichage -->
 <?php
-// On nettoie les données du formulaire après affichage
 if (isset($_SESSION['form_data'])) {
     unset($_SESSION['form_data']);
 }
