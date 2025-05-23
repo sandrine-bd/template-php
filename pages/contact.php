@@ -70,25 +70,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') { // Vérification que le formulaire 
 
     // Validation et traitement du fichier uploadé
     $nom_fichier_final = '';
-    if (isset($_FILES['fichier_joint']) && $_FILES['fichier_joint']['error'] !== UPLOAD_ERR_NO_FILE) {
-        $fichier = $_FILES['fichier_joint'];
+    if (isset($_FILES['fichier_joint']) && $_FILES['fichier_joint']['error'] !== UPLOAD_ERR_NO_FILE) { // vérifie qu'un fichier a été sélectionné
+        $fichier = $_FILES['fichier_joint']; // simplification de la variable
 
         //Vérification des erreurs d'upload
-        if ($fichier['error'] !== UPLOAD_ERR_OK) {
+        if ($fichier['error'] !== UPLOAD_ERR_OK) { // si le code d'erreur n'est pas OK
             switch ($fichier['error']) {
-                case UPLOAD_ERR_INI_SIZE:
-                case UPLOAD_ERR_FORM_SIZE:
+                case UPLOAD_ERR_INI_SIZE: // dépasse la limite définie dans php.ini
+                case UPLOAD_ERR_FORM_SIZE: // dépasse la limite définie dans le formulaire HTML
                     $erreurs['fichier'] = "Le fichier est trop volumineux.";
                     break;
-                case UPLOAD_ERR_PARTIAL:
+                case UPLOAD_ERR_PARTIAL: // upload interrompu (connexion coupée...)
                     $erreurs['fichier'] = "Le fichier n'a été que partiellement téléchargé.";
                     break;
                 default:
-                    $erreurs['fichier'] = "Erreur lors du téléchargement du fichier.";
+                    $erreurs['fichier'] = "Erreur lors du téléchargement du fichier."; // toute autre erreur
             }
-        } else {
+        } else { // si pas d'erreur PHP
             // Vérification de la taille (5 MB)
-            $taille_max = 5 * 1024 * 1024;
+            $taille_max = 5 * 1024 * 1024; //  calcul de 5 MB en octets : 5 × 1024 Ko × 1024 octets
             if ($fichier['size'] > $taille_max) {
                 $erreurs['fichier'] = "Le fichier ne peut pas dépasser 5 MB.";
             }
@@ -96,36 +96,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') { // Vérification que le formulaire 
             // Vérification du type de fichier
             $extensions_autorisees = ['jpg', 'jpeg', 'gif', 'png', 'pdf', 'doc', 'docx', 'txt', 'zip'];
             $extension = strtolower(pathinfo($fichier['name'], PATHINFO_EXTENSION));
+            // strtolower convertit en minuscules et les pathinfo extraient l'extension du nom de fichier
 
             if (!in_array($extension, $extensions_autorisees)) {
                 $erreurs['fichier'] = "Type de fichier non autorisé. Extensions acceptées : " . implode(', ', $extensions_autorisees)   ;
+                                                                                            // transforme le tableau en chaîne avec des virgules
             }
 
             // Si pas d'erreur, on prépare le fichier pour sauvegarde
             if (!isset($erreurs['fichier'])) {
                 // Création d'un nom unique pour éviter les conflits
-                $nom_fichier_original = pathinfo($fichier['name'], PATHINFO_FILENAME);
+                $nom_fichier_original = pathinfo($fichier['name'], PATHINFO_FILENAME); // extrait le nom sans l'extension
                 $nom_fichier_unique = $nom_fichier_original . ' ' . uniqid() . '.' . $extension;
 
                 // Création du dossier storage s'il n'existe pas
                 $dossier_storage = "storage";
                 if (!is_dir($dossier_storage)) {
                     mkdir($dossier_storage, 0777, true);
+                    // permissions 0777 = lecture/écriture/exécution pour tous / récursif = crée les dossiers parents si nécessaire
                 }
 
-                $chemin_destination = $dossier_storage . '/' . $nom_fichier_unique;
-
                 // Déplacement du fichier vers le dossier storage
-                if (move_uploaded_file($fichier['tmp_name'], $chemin_destination)) {
+                $chemin_destination = $dossier_storage . '/' . $nom_fichier_unique;
+                if (move_uploaded_file($fichier['tmp_name'], $chemin_destination)) { // tmp_name : chemin temporaire où PHP a stocké le fichier uploadé
                     $nom_fichier_final = $nom_fichier_unique;
                     $fichier_info = "Fichier original : " . $fichier['name'] . " | Taille : " . round($fichier['size'] / 1024, 2) . "KB";
+                                                                                                // arrondit la taille en Ko à 2 décimales
                 } else {
                     $erreurs['fichier'] = "Erreur lors de la sauvegarde du fichier.";
                 }
             }
         }
     }
-
 
     // Traitement du formulaire si aucune erreur
     if (empty($erreurs)) {
